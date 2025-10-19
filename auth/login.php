@@ -1,52 +1,58 @@
 <?php
 require "../config/config.php";
 
+// ✅ Define constants if not already defined
+if (!defined('APPURL')) {
+    define("APPURL", "http://localhost/paljob");
+}
+if (!defined('ADMINURL')) {
+    define("ADMINURL", "http://localhost/paljob/admin-panel");
+}
 
 // Already logged in? Redirect BEFORE output
 if (!empty($_SESSION['username'])) {
-  header("Location:: /index.php");
-  exit;
+    header("Location: " . APPURL . "/index.php");
+    exit;
 }
 
 // Handle POST BEFORE including header/HTML
 if (isset($_POST['submit'])) {
-  $email = trim($_POST['email'] ?? '');
-  $password = $_POST['password'] ?? '';
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
 
-  if ($email === '' || $password === '') {
-    $_SESSION['flash_error'] = "Some inputs are empty.";
-    header("Location: login.php");
-    exit;
-  }
-
-  $stmt = $conn->prepare("SELECT id, username, email, mypassword, img, cv, type FROM users WHERE email = :email LIMIT 1");
-  $stmt->execute([':email' => $email]);
-  $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-  if ($user && password_verify($password, $user['mypassword'])) {
-    // Regenerate session ID only AFTER session_start()
-    if (session_status() === PHP_SESSION_ACTIVE) {
-      session_regenerate_id(true);
+    if ($email === '' || $password === '') {
+        $_SESSION['flash_error'] = "Some inputs are empty.";
+        header("Location: login.php");
+        exit;
     }
 
-    $_SESSION['username'] = $user['username'];
-    $_SESSION['id'] = (int)$user['id'];
-    $_SESSION['type'] = $user['type'];
-    $_SESSION['email'] = $user['email'];
-    $_SESSION['image'] = $user['img'] ?? null;
-    $_SESSION['cv'] = $user['cv'] ?? null;
+    $stmt = $conn->prepare("SELECT id, username, email, mypassword, img, cv, type FROM users WHERE email = :email LIMIT 1");
+    $stmt->execute([':email' => $email]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    header("Location: " . APPURL . "/index.php");
-    exit;
-  } else {
-    $_SESSION['flash_error'] = "Invalid user";
-    header("Location: login.php");
-    exit;
-  }
+    if ($user && password_verify($password, $user['mypassword'])) {
+        // Regenerate session ID only AFTER session_start()
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
+        }
+
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['id'] = (int)$user['id'];
+        $_SESSION['type'] = $user['type'];
+        $_SESSION['email'] = $user['email'];
+        $_SESSION['image'] = $user['img'] ?? null;
+        $_SESSION['cv'] = $user['cv'] ?? null;
+
+        header("Location: " . APPURL . "/index.php");
+        exit;
+    } else {
+        $_SESSION['flash_error'] = "Invalid user";
+        header("Location: login.php");
+        exit;
+    }
 }
 
 
-require_once "../partials/header.php";
 
 // Flash UI
 $flash_error = $_SESSION['flash_error'] ?? '';

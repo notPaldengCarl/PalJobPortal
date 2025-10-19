@@ -80,11 +80,18 @@
           <p class="mb-0 font-weight-bold">Address</p>
           <p class="mb-4">PalJob PH, 24F Net Park, 5th Ave, Bonifacio Global City, Taguig, Metro Manila 1630</p>
 
-          <p class="mb-0 font-weight-bold">Phone</p>
-          <p class="mb-4"><a href="tel:+63282456789">+63 (2) 8245 6789</a> • <a href="tel:+639171234567">+63 917 123 4567</a></p>
+<p class="mb-0 font-weight-bold">Phone</p>
+<p class="mb-4 contact-link">
+  <a href="tel:+63282456789">+63 (2) 8245 6789</a> • 
+  <a href="tel:+639171234567">+63 917 123 4567</a>
+</p>
 
-          <p class="mb-0 font-weight-bold">Email Address</p>
-          <p class="mb-0"><a href="mailto:support@paljob.ph">support@paljob.ph</a> • <a href="mailto:partners@paljob.ph">partners@paljob.ph</a></p>
+<p class="mb-0 font-weight-bold">Email Address</p>
+<p class="mb-0 contact-link">
+  <a href="mailto:support@paljob.ph">support@paljob.ph</a> • 
+  <a href="mailto:partners@paljob.ph">partners@paljob.ph</a>
+</p>
+
         </div>
       </div>
     </div>

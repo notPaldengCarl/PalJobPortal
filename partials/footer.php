@@ -58,22 +58,22 @@
 </div>
 
 <!-- SCRIPTS -->
-<script src="http://localhost/jobboard/js/jquery.min.js"></script>
-<script src="http://localhost/jobboard/js/bootstrap.bundle.min.js"></script>
-<script src="http://localhost/jobboard/js/isotope.pkgd.min.js"></script>
-<script src="http://localhost/jobboard/js/stickyfill.min.js"></script>
-<script src="http://localhost/jobboard//js/jquery.fancybox.min.js"></script>
-<script src="http://localhost/jobboard/js/jquery.easing.1.3.js"></script>
+<script src="http://localhost/paljob/js/jquery.min.js"></script>
+<script src="http://localhost/paljob/js/bootstrap.bundle.min.js"></script>
+<script src="http://localhost/paljob/js/isotope.pkgd.min.js"></script>
+<script src="http://localhost/paljob/js/stickyfill.min.js"></script>
+<script src="http://localhost/paljob//js/jquery.fancybox.min.js"></script>
+<script src="http://localhost/paljob/js/jquery.easing.1.3.js"></script>
 
-<script src="http://localhost/jobboard/js/jquery.waypoints.min.js"></script>
-<script src="http://localhost/jobboard/js/jquery.animateNumber.min.js"></script>
-<script src="http://localhost/jobboard/js/owl.carousel.min.js"></script>
-<script src="http://localhost/jobboard/js/quill.min.js"></script>
+<script src="http://localhost/paljob/js/jquery.waypoints.min.js"></script>
+<script src="http://localhost/paljob/js/jquery.animateNumber.min.js"></script>
+<script src="http://localhost/paljob/js/owl.carousel.min.js"></script>
+<script src="http://localhost/paljob/js/quill.min.js"></script>
 
 
-<script src="http://localhost/jobboard/js/bootstrap-select.min.js"></script>
+<script src="http://localhost/paljob/js/bootstrap-select.min.js"></script>
 
-<script src="http://localhost/jobboard/js/custom.js"></script>
+<script src="http://localhost/paljob/js/custom.js"></script>
 
 
 

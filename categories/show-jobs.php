@@ -1,4 +1,4 @@
-<?php require "../includes/header.php"; ?>
+<?php require "../partials/header.php"; ?>
 <?php require "../config/config.php"; ?>
 
 <?php 
@@ -73,4 +73,4 @@
 </section>
     
 
-<?php require "../includes/footer.php"; ?>
+<?php require "../partials/footer.php"; ?>

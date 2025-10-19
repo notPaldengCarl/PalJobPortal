@@ -45,7 +45,6 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
   <body id="top">
 <div class="site-wrap">
 
-  <!-- Off-canvas mobile menu (STATIC LIST, no cloning) -->
   <div class="site-mobile-menu site-navbar-target" aria-hidden="true">
     <div class="site-mobile-menu-header">
       <div class="site-mobile-menu-logo">

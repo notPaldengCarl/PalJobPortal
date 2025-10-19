@@ -989,7 +989,7 @@ color: #ffffff !important;
 .block__19738 {
   text-align: center; }
   .block__19738 [class^="icon-"], .block__19738 [class^="flaticon-"] {
-    font-size: 2.5rem; }
+    font-size: 2.5rem; color: #001f3f;}
   .block__19738 .number {
     font-size: 3.2rem;
     font-weight: 900;
@@ -1024,6 +1024,7 @@ color: #ffffff !important;
       display: none;
       border-radius: 50%;
       position: absolute;
+      color: #001f3f;
       left: 50%;
       top: 50%;
       -webkit-transform: translate(-50%, -50%);
@@ -1035,7 +1036,7 @@ color: #ffffff !important;
       border: 1px solid rgba(137, 186, 22, 0.2); }
   .block__62849 .block__16443 [class^="icon-"], .block__62849 .block__16443 [class^="flaticon-"] {
     font-size: 1.6rem;
-    color: #fff;
+    color: #001f3f;
     position: absolute;
     top: 50%;
     left: 50%;
@@ -1069,8 +1070,8 @@ color: #ffffff !important;
   margin-bottom: 2rem;
   border-radius: 7px; }
   .block__87154.bg-primary {
-    -webkit-box-shadow: 0 5px 30px -5px rgba(137, 186, 22, 0.8);
-    box-shadow: 0 5px 30px -5px rgba(137, 186, 22, 0.8); }
+    -webkit-box-shadow: 0 5px 30px -5px #001f3f;
+    box-shadow: 0 5px 30px -5px  #001f3f; }
     .block__87154.bg-primary p {
       font-size: 1.5rem;
       font-weight: 300;
@@ -1613,6 +1614,7 @@ color: #ffffff !important;
     position: relative; }
   .search-form .icon {
     position: absolute;
+    color: #001f3f;
     top: 50%;
     right: 20px;
     -webkit-transform: translateY(-50%);
@@ -1674,3 +1676,59 @@ color: #ffffff !important;
   -webkit-transform: translate(-50%, -50%);
   -ms-transform: translate(-50%, -50%);
   transform: translate(-50%, -50%); }
+
+  /* === GLOBAL COLOR FIX: Make everything blue === */
+:root {
+  --theme-blue: #007bff;
+}
+
+
+/* === FORCE PRIMARY BLUE === */
+.text-primary,
+h3.text-primary,
+h3.h5.text-primary,
+.icon-align-left,
+.icon-rocket,
+.icon-book,
+.icon-turned_in,
+.icon-check_circle,
+.icon-facebook,
+.icon-twitter,
+.icon-linkedin,
+.badge-success,
+.btn btn-success text-white
+.btn-primary {
+  color: #007bff !important;
+  border-color: #007bff !important;
+  background-color: transparent !important;
+}
+
+
+.contact-link a {
+  color: #007bff !important;   
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.contact-link a:hover {
+  color: #0056b3 !important;   
+  text-decoration: underline;
+}
+
+
+
+.btn-primary,
+.badge-success {
+  background-color: #007bff !important;
+  border-color: #007bff !important;
+}
+
+
+.btn-primary:hover {
+  background-color: #0056b3 !important;
+}
+
+
+a.text-primary:hover {
+  color: #0056b3 !important;
+}

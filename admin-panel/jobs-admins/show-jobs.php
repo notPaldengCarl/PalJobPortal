@@ -39,12 +39,12 @@
                     <td><?php echo $job->job_category; ?></td>
                     <td><?php echo $job->company_name; ?></td>
                     <?php if($job->status == 1) : ?>
-                      <td><a href="<?php echo ADMINURL; ?>/jobs-admins/status-jobs.php?id=<?php echo $job->id; ?>&status=<?php echo $job->status; ?>" class="btn btn-danger  text-center ">unverfied</a></td>
+                      <td><a href="<?php echo ADMINURL; ?>/jobs-admins/status-jobs.php?id=<?php echo $job->id; ?>&status=<?php echo $job->status; ?>" class="btn btn-danger  text-center ">Not Verfied</a></td>
                     <?php else : ?>
 
-                     <td><a href="<?php echo ADMINURL; ?>/jobs-admins/status-jobs.php?id=<?php echo $job->id; ?>&status=<?php echo $job->status; ?>" class="btn btn-success  text-center ">verfied</a></td>
+                     <td><a href="<?php echo ADMINURL; ?>/jobs-admins/status-jobs.php?id=<?php echo $job->id; ?>&status=<?php echo $job->status; ?>" class="btn btn-success  text-center ">Verified</a></td>
                     <?php endif; ?>
-                     <td><a href="<?php echo ADMINURL; ?>/jobs-admins/delete-jobs.php?id=<?php echo $job->id; ?>" class="btn btn-danger  text-center ">delete</a></td>
+                     <td><a href="<?php echo ADMINURL; ?>/jobs-admins/delete-jobs.php?id=<?php echo $job->id; ?>" class="btn btn-danger  text-center ">Delete</a></td>
                   </tr>
                   <?php endforeach; ?>
                 </tbody>

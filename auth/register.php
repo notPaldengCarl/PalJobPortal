@@ -4,6 +4,9 @@ ob_start();
 
 require "../config/config.php";
 
+if (!defined('ADMINURL')) {
+    define("ADMINURL", "http://localhost/paljob/admin-panel");
+}
 
 if (isset($_SESSION['username'])) {
   header("Location: " . APPURL);

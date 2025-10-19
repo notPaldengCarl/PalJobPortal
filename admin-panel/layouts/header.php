@@ -6,7 +6,7 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 // Define ADMINURL once
 if (!defined('ADMINURL')) {
-  define('ADMINURL', 'http://localhost/jobboard/admin-panel');
+  define('ADMINURL', 'http://localhost/paljob/admin-panel');
 }
 
 // Allow logic endpoints to disable rendering before including this file
