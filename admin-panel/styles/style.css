@@ -1,0 +1,125 @@
+<?php 
+  session_start();
+  define("ADMINURL", "http://localhost/jobboard/admin-panel");
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Admin Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap 4 + jQuery -->
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+  <!-- Inter + Icons (optional to match site) -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:200,300,400,700">
+
+  <!-- Admin theme -->
+  <link href="<?php echo ADMINURL; ?>/styles/style.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --primary:#001f3f;
+      --primary-acc:#011aff;
+      --text:#212529;
+      --muted:#6c757d;
+      --bg:#f9f9f9;
+      --card:#ffffff;
+      --shadow:0 3px 5px rgba(0,0,0,.1);
+      --shadow-lg:0 10px 20px rgba(0,0,0,.15);
+      --radius:10px;
+    }
+    html,body{height:100%;}
+    body{background:var(--bg); font-family:"Inter",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--text);}
+    #wrapper{padding:90px 15px;}
+    .header-top{box-shadow:var(--shadow);}
+    .card{margin-bottom:15px; border:0; border-radius:var(--radius); box-shadow:var(--shadow);}
+    .card:hover{box-shadow:var(--shadow-lg);}
+
+    /* Top navbar */
+    .navbar.header-top{background:#fff;}
+    .navbar.header-top .navbar-brand,
+    .navbar.header-top .nav-link{color:var(--text);}
+    .navbar.header-top .nav-link:hover{color:var(--primary);}
+
+    /* Side nav */
+    .navbar-expand-lg .navbar-nav.side-nav{flex-direction:column;}
+    @media(min-width:992px){
+      #wrapper{margin-left:220px; padding:90px 24px 24px;}
+      .navbar-nav.side-nav{
+        background:#585f66;
+        box-shadow:2px 1px 2px rgba(0,0,0,.1);
+        position:fixed; top:56px; left:0; bottom:0;
+        width:220px; overflow-y:auto; overflow-x:hidden; padding-bottom:40px;
+      }
+    }
+    .navbar-nav.side-nav .nav-link{
+      color:#e9ecef; padding:12px 18px; transition:.2s color, .2s background, .2s padding-left;
+    }
+    .navbar-nav.side-nav .nav-link:hover{color:#fff; background:rgba(255,255,255,.06); padding-left:22px;}
+    .navbar-nav.side-nav .nav-link.active{
+      color:#fff; background:linear-gradient(90deg, rgba(1,26,255,.25), rgba(1,26,255,0));
+      border-left:3px solid var(--primary-acc);
+    }
+
+    /* Small screens: off-canvas for side nav */
+    @media(max-width:991.98px){
+      .navbar-nav.side-nav{
+        position:fixed; top:56px; left:0; bottom:0; width:220px;
+        background:#585f66; transform:translateX(-110%);
+        transition:.2s transform cubic-bezier(0.66,0.2,0.48,0.9);
+        z-index:2000; padding-top:10px;
+      }
+      body.admin-offcanvas .navbar-nav.side-nav{ transform:translateX(0%); }
+      body.admin-offcanvas{ overflow:hidden; }
+    }
+  </style>
+</head>
+<body>
+<div id="wrapper">
+
+  <nav class="navbar header-top fixed-top navbar-expand-lg navbar-light">
+    <div class="container">
+      <a class="navbar-brand font-weight-bold" href="<?php echo ADMINURL; ?>">PalJob Admin</a>
+
+      <!-- Off-canvas toggle on mobile -->
+      <button class="navbar-toggler" type="button" id="adminMenuToggle" aria-label="Toggle sidebar">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse show" id="navbarText"><!-- keep show to retain right menu on desktop -->
+        <!-- Left side navigation -->
+        <ul class="navbar-nav side-nav">
+          <?php if(isset($_SESSION['adminname'])) : ?>
+          <li class="nav-item"><a class="nav-link text-white" href="<?php echo ADMINURL; ?>">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="<?php echo ADMINURL; ?>/admins/admins.php">Admins</a></li>
+          <li class="nav-item"><a class="nav-link" href="<?php echo ADMINURL; ?>/categories-admins/show-categories.php">Categories</a></li>
+          <li class="nav-item"><a class="nav-link" href="<?php echo ADMINURL; ?>/jobs-admins/show-jobs.php">Jobs</a></li>
+          <?php endif; ?>
+        </ul>
+
+        <!-- Right side user menu -->
+        <ul class="navbar-nav ml-auto">
+          <?php if(isset($_SESSION['adminname'])) : ?>
+            <li class="nav-item"><a class="nav-link" href="<?php echo ADMINURL; ?>">Home</a></li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <?php echo $_SESSION['adminname']; ?>
+              </a>
+              <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                <a class="dropdown-item" href="<?php echo ADMINURL; ?>/admins/logout-admins.php">Logout</a>
+              </div>
+            </li>
+          <?php else : ?>
+            <li class="nav-item"><a class="nav-link" href="<?php echo ADMINURL; ?>/admins/login-admins.php">Login</a></li>
+          <?php endif; ?>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container pt-4">
+    <!-- admin content goes here -->
