@@ -42,4 +42,5 @@ The system provides an intuitive admin dashboard for managing users, categories,
 
 1. **Clone this repository**
    ```bash
-   git clone https://github.com/yourusername/paljob.git
+   git clone https://github.com/notPaldengCarl/paljob.git
+
