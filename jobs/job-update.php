@@ -1,21 +1,23 @@
 <?php
 require "../config/config.php";
-require "../partials/header.php";
 
-// ✅ Ensure only logged-in companies can access
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Ensure only logged-in companies can access
 if (!isset($_SESSION['type']) || $_SESSION['type'] !== "Company") {
   header("Location: " . APPURL . "/auth/login.php");
   exit;
 }
 
-// ✅ Get all categories
+// Get all categories
 $get_categories = $conn->query("SELECT * FROM categories ORDER BY name ASC");
-$get_categories->execute();
 $get_category = $get_categories->fetchAll(PDO::FETCH_OBJ);
 
-// ✅ Check if job ID exists
+// Check if job ID exists
 if (isset($_GET['id'])) {
-  $id = $_GET['id'];
+  $id = (int) $_GET['id'];
 
   $select = $conn->prepare("SELECT * FROM jobs WHERE id = :id");
   $select->execute([':id' => $id]);
@@ -26,7 +28,7 @@ if (isset($_GET['id'])) {
     exit;
   }
 
-  // ✅ Prevent users from editing others’ jobs
+  // Prevent users from editing others’ jobs
   if ($singleJob->company_id != $_SESSION['id']) {
     header("Location: " . APPURL);
     exit;
@@ -36,24 +38,75 @@ if (isset($_GET['id'])) {
   exit;
 }
 
-// ✅ Handle Update Form Submission
+// Handle Update Form Submission (including optional job image upload)
 if (isset($_POST['submit'])) {
   $required_fields = [
     'job_title', 'job_region', 'job_type', 'vacancy', 'job_category',
     'experience', 'salary', 'gender', 'application_deadline',
     'job_description', 'responsibilities', 'education_experience',
-    'other_benifits', 'company_email', 'company_name', 'company_id', 'company_image'
+    'other_benifits', 'company_email', 'company_name', 'company_id'
   ];
 
   foreach ($required_fields as $field) {
-    if (empty($_POST[$field])) {
+    if (!isset($_POST[$field]) || trim($_POST[$field]) === '') {
       echo "<script>alert('One or more fields are empty');</script>";
       exit;
     }
   }
 
-  // ✅ Prepare update query
-  $update = $conn->prepare("
+  // handle optional job image
+  $uploadedImageName = null;
+  if (isset($_FILES['job_image']) && is_uploaded_file($_FILES['job_image']['tmp_name'])) {
+    $file = $_FILES['job_image'];
+    if ($file['error'] === UPLOAD_ERR_OK) {
+      // basic validation
+      $maxSize = 2 * 1024 * 1024; // 2MB
+      if ($file['size'] > $maxSize) {
+        echo "<script>alert('Image too large (max 2MB)');</script>";
+        exit;
+      }
+      $imgInfo = @getimagesize($file['tmp_name']);
+      if ($imgInfo === false) {
+        echo "<script>alert('Invalid image file');</script>";
+        exit;
+      }
+      $mime = $imgInfo['mime'];
+      $allowed = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif'];
+      if (!isset($allowed[$mime])) {
+        echo "<script>alert('Only JPG/PNG/GIF allowed');</script>";
+        exit;
+      }
+      $ext = $allowed[$mime];
+
+      $uploadDir = __DIR__ . '/job-images/';
+      if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
+        echo "<script>alert('Server error: cannot create upload dir');</script>";
+        exit;
+      }
+
+      $uploadedImageName = uniqid('job_' . $id . '_', true) . '.' . $ext;
+      $destination = $uploadDir . $uploadedImageName;
+      if (!move_uploaded_file($file['tmp_name'], $destination)) {
+        echo "<script>alert('Failed to save uploaded image');</script>";
+        exit;
+      }
+      @chmod($destination, 0644);
+
+      // remove old job image if exists and different
+      if (!empty($singleJob->job_image)) {
+        $old = $uploadDir . $singleJob->job_image;
+        if (is_file($old) && basename($old) !== basename($destination)) {
+          @unlink($old);
+        }
+      }
+    } else {
+      echo "<script>alert('Upload error');</script>";
+      exit;
+    }
+  }
+
+  // build update SQL dynamically to include job_image only when uploaded
+  $sql = "
     UPDATE jobs SET
       job_title = :job_title,
       job_region = :job_region,
@@ -70,12 +123,18 @@ if (isset($_POST['submit'])) {
       other_benifits = :other_benifits,
       company_email = :company_email,
       company_name = :company_name,
-      company_id = :company_id,
-      company_image = :company_image
-    WHERE id = :id
-  ");
+      company_id = :company_id
+  ";
 
-  $update->execute([
+  if ($uploadedImageName !== null) {
+    $sql .= ", job_image = :job_image";
+  }
+
+  $sql .= " WHERE id = :id";
+
+  $update = $conn->prepare($sql);
+
+  $params = [
     ':job_title' => $_POST['job_title'],
     ':job_region' => $_POST['job_region'],
     ':job_type' => $_POST['job_type'],
@@ -92,13 +151,22 @@ if (isset($_POST['submit'])) {
     ':company_email' => $_POST['company_email'],
     ':company_name' => $_POST['company_name'],
     ':company_id' => $_POST['company_id'],
-    ':company_image' => $_POST['company_image'],
     ':id' => $id
-  ]);
+  ];
 
-  header("Location: " . APPURL . "/jobs/job-update.php?id=" . $id);
+  if ($uploadedImageName !== null) {
+    $params[':job_image'] = $uploadedImageName;
+  }
+
+  $update->execute($params);
+
+  // after update, redirect to the job details page (changed from job-update)
+  header("Location: " . APPURL . "/jobs/job-single.php?id=" . $id);
   exit;
 }
+
+// now include header and render form
+require "../partials/header.php";
 ?>
 
 <section class="section-hero overlay inner-page bg-image" style="background-image: url('../images/4k.jpg');" id="home-section">
@@ -130,7 +198,8 @@ if (isset($_POST['submit'])) {
 
     <div class="row mb-5">
       <div class="col-lg-12">
-        <form class="p-4 p-md-5 border rounded" action="job-update.php?id=<?php echo $id; ?>" method="post">
+        <!-- enctype added -->
+        <form class="p-4 p-md-5 border rounded" action="job-update.php?id=<?php echo $id; ?>" method="post" enctype="multipart/form-data">
 
           <div class="form-group">
             <label for="job-title">Job Title</label>
@@ -226,11 +295,21 @@ if (isset($_POST['submit'])) {
             <textarea name="other_benifits" class="form-control" rows="6" required><?php echo htmlspecialchars($singleJob->other_benifits); ?></textarea>
           </div>
 
-          <!-- ✅ Hidden Company Data -->
-          <input type="hidden" name="company_email" value="<?php echo $_SESSION['email']; ?>">
-          <input type="hidden" name="company_name" value="<?php echo $_SESSION['username']; ?>">
-          <input type="hidden" name="company_id" value="<?php echo $_SESSION['id']; ?>">
-          <input type="hidden" name="company_image" value="<?php echo $_SESSION['image']; ?>">
+          <div class="form-group">
+            <label for="job-image">Job Image (optional)</label>
+            <?php if (!empty($singleJob->job_image)): ?>
+              <div class="mb-2">
+                <img src="<?php echo APPURL; ?>/jobs/job-images/<?php echo htmlspecialchars($singleJob->job_image); ?>" style="max-width:200px;max-height:120px;object-fit:cover;">
+              </div>
+            <?php endif; ?>
+            <input type="file" name="job_image" accept="image/*" class="form-control-file">
+            <small class="form-text text-muted">JPG/PNG/GIF, max 2MB.</small>
+          </div>
+
+          <!-- Hidden Company Data -->
+          <input type="hidden" name="company_email" value="<?php echo htmlspecialchars($_SESSION['email']); ?>">
+          <input type="hidden" name="company_name" value="<?php echo htmlspecialchars($_SESSION['username']); ?>">
+          <input type="hidden" name="company_id" value="<?php echo (int)$_SESSION['id']; ?>">
 
           <div class="text-right mt-4">
             <input type="submit" name="submit" class="btn btn-primary btn-md px-5" value="Update Job">

@@ -1,17 +1,34 @@
 <?php require "partials/header.php"; ?>
 <?php require "config/config.php"; ?>
-<?php 
 
-  $select = $conn->query("SELECT * FROM jobs WHERE status = 1 ORDER BY created_at DESC LIMIT 5");
+<?php 
+  // ✅ Fetch latest 5 active jobs, joined with their company info
+  $select = $conn->prepare("
+    SELECT 
+      j.id, j.job_title, j.job_region, j.job_type, j.status, j.created_at,
+      u.username AS company_name,
+      u.img AS company_image
+    FROM jobs j
+    LEFT JOIN users u ON j.company_id = u.id
+    WHERE j.status = 1
+    ORDER BY j.created_at DESC
+    LIMIT 5
+  ");
   $select->execute();
   $jobs = $select->fetchAll(PDO::FETCH_OBJ);
 
-  $searches = $conn->query("SELECT COUNT(keyword) AS count, keyword FROM searches
-   GROUP BY keyword ORDER BY count DESC LIMIT 4");
+  // ✅ Fetch top 4 trending search keywords
+  $searches = $conn->query("
+    SELECT COUNT(keyword) AS count, keyword 
+    FROM searches
+    GROUP BY keyword 
+    ORDER BY count DESC 
+    LIMIT 4
+  ");
   $searches->execute();
   $allSearches = $searches->fetchAll(PDO::FETCH_OBJ);
 ?>
-          
+
 <!-- HOME -->
 <section class="home-section section-hero overlay bg-image" style="background-image: url('images/4k.jpg');" id="home-section">
   <div class="container">
@@ -22,7 +39,7 @@
           <p>Connecting Filipino talent with great companies nationwide.</p>
         </div>
 
-        <!-- Add needs-validation and required attributes -->
+        <!-- Search Form -->
         <form method="post" action="search.php" class="search-jobs-form needs-validation" novalidate>
           <div class="row mb-5">
             <div class="col-12 col-sm-6 col-md-6 col-lg-3 mb-4 mb-lg-0">
@@ -52,7 +69,6 @@
                 <option>Full Time</option>
                 <option>Part Time</option>
                 <option>Freelance</option>
-                <option>Remote</option>
               </select>
               <div class="invalid-feedback d-block">Please select a job type.</div>
             </div>
@@ -85,19 +101,16 @@
   </a>
 </section>
 
-
-<!-- Client-side validation script -->
+<!-- Validation Script -->
 <script>
 (function() {
   'use strict';
   const form = document.querySelector('.search-jobs-form');
   if (!form) return;
 
-  // If using Bootstrap-select, mark selects as required by syncing hidden input
   function normalizeSelectpickerRequired() {
     const selects = form.querySelectorAll('select[required]');
     selects.forEach(sel => {
-      // If no value selected (first is disabled), set custom validity
       if (!sel.value || sel.value === '') {
         sel.setCustomValidity('Please select an option.');
       } else {
@@ -108,13 +121,6 @@
 
   form.addEventListener('submit', function(e) {
     normalizeSelectpickerRequired();
-
-    // Basic title trim check
-    const title = form.querySelector('input[name="job-title"]');
-    if (title && title.value.trim() === '') {
-      title.value = '';
-    }
-
     if (!form.checkValidity()) {
       e.preventDefault();
       e.stopPropagation();
@@ -122,15 +128,13 @@
     form.classList.add('was-validated');
   });
 
-  // Re-validate selects on change
   form.addEventListener('change', function(e) {
-    if (e.target.tagName === 'SELECT') {
-      normalizeSelectpickerRequired();
-    }
+    if (e.target.tagName === 'SELECT') normalizeSelectpickerRequired();
   });
 })();
 </script>
 
+<!-- Stats Section -->
 <section class="py-5 bg-image overlay-primary fixed overlay" id="next" style="background-image: url('images/hero_ph.jpg');">
   <div class="container">
     <div class="row mb-5 justify-content-center">
@@ -168,6 +172,7 @@
   </div>
 </section>
 
+<!-- Job Listings -->
 <section class="site-section">
   <div class="container">
     <ul class="job-listings mb-5">
@@ -175,19 +180,34 @@
         <li class="job-listing d-block d-sm-flex pb-3 pb-sm-0 align-items-center">
           <a href="jobs/job-single.php?id=<?php echo $job->id; ?>"></a>
           <div class="job-listing-logo">
-            <img src="users/user-images/<?php echo $job->company_image; ?>" alt="<?php echo $job->company_image; ?>" class="img-fluid">
+            <img src="users/user-images/<?php echo !empty($job->company_image) ? htmlspecialchars($job->company_image) : 'default.png'; ?>" 
+                 alt="<?php echo htmlspecialchars($job->company_name); ?>" 
+                 class="img-fluid">
           </div>
           <div class="job-listing-about d-sm-flex custom-width w-100 justify-content-between mx-4">
             <div class="job-listing-position custom-width w-50 mb-3 mb-sm-0">
-              <h2><?php echo $job->job_title; ?></h2>
-              <strong><?php echo $job->company_name; ?></strong>
+              <h2><?php echo htmlspecialchars($job->job_title); ?></h2>
+              <strong><?php echo htmlspecialchars($job->company_name); ?></strong>
             </div>
             <div class="job-listing-location mb-3 mb-sm-0 custom-width w-25">
-              <span class="icon-room"></span> <?php echo $job->job_region; ?>
+              <span class="icon-room"></span> <?php echo htmlspecialchars($job->job_region); ?>
             </div>
-            <div class="job-listing-meta">
-              <span class="badge badge-<?php if($job->job_type == 'Part Time') { echo 'danger'; } else { echo 'success'; } ?>"><?php echo $job->job_type; ?></span>
-            </div>
+           <div class="job-listing-meta">
+  <?php
+    // Normalize job_type (handle null, lowercase, or underscores)
+    $type = strtolower(trim(str_replace('_', ' ', $job->job_type ?? '')));
+    $badgeClass = 'secondary';
+
+    if ($type === 'part time') $badgeClass = 'danger';
+    elseif ($type === 'full time') $badgeClass = 'success';
+    elseif ($type === 'freelance') $badgeClass = 'info';
+  ?>
+
+  <span class="badge badge-<?php echo $badgeClass; ?>">
+   <small class="text-muted"><?php echo htmlspecialchars($job->job_type); ?></small>
+  </span>
+</div>
+
           </div>
         </li>
         <br>
@@ -196,6 +216,7 @@
   </div>
 </section>
 
+<!-- Call to Action -->
 <section class="py-5 bg-image overlay-primary fixed overlay" style="background-image: url('images/hero_ph.jpg');">
   <div class="container">
     <div class="row align-items-center">
@@ -210,6 +231,7 @@
   </div>
 </section>
 
+<!-- Partners -->
 <section class="site-section py-4">
   <div class="container">
     <div class="row align-items-center">
@@ -221,18 +243,17 @@
           </div>
         </div>
       </div>
-
       <div class="col-6 col-lg-3 col-md-6 text-center">
-        <img src="images/ayala-logo.svg" alt="Jollibee" class="img-fluid logo-1">
+        <img src="images/ayala-logo.svg" alt="Ayala" class="img-fluid logo-1">
       </div>
       <div class="col-6 col-lg-3 col-md-6 text-center">
-        <img src="images/globe-logo.png" alt="Globe Telecom" class="img-fluid logo-2">
+        <img src="images/globe-logo.png" alt="Globe" class="img-fluid logo-2">
       </div>
       <div class="col-6 col-lg-3 col-md-6 text-center">
-        <img src="images/sm-logo.png" alt="Ayala" class="img-fluid logo-3">
+        <img src="images/sm-logo.png" alt="SM" class="img-fluid logo-3">
       </div>
       <div class="col-6 col-lg-3 col-md-6 text-center">
-        <img src="images/jollibee-logo.png" alt="SM" class="img-fluid logo-4">
+        <img src="images/jollibee-logo.png" alt="Jollibee" class="img-fluid logo-4">
       </div>
     </div>
   </div>

@@ -1,32 +1,35 @@
-
 <?php
-if (session_status() !== PHP_SESSION_ACTIVE) {
-  session_start();
+// start output buffering so header() still works if a file emits output early
+if (!ob_get_level()) {
+    ob_start();
 }
 
-    try {
+// ensure a session is started for all pages
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// define APPURL once for all scripts
+if (!defined('APPURL')) {
+    define('APPURL', 'http://localhost/paljob');
+}
+
+try {
         
-        $host = "localhost";
+    $host = "localhost";
 
-        $dbname = "paljob";
+    $dbname = "paljob";
     
-        $user = "root";
+    $user = "root";
     
-        $pass = "";
+    $pass = "";
     
-    
-        $conn = new PDO("mysql:host=$host;dbname=$dbname", $user, $pass);
-        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $conn = new PDO("mysql:host=$host;dbname=$dbname", $user, $pass);
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    } catch(PDOException $e) {
-        echo $e->getMessage();
-    }
-   
-    // if($conn == true) {
-    //     echo "connected successfully";
-    // } else {
-    //     echo "err";
-    // }
+} catch(PDOException $e) {
+    echo $e->getMessage();
+}
 
 
 

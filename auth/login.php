@@ -1,7 +1,12 @@
 <?php
 require "../config/config.php";
 
-// ✅ Define constants if not already defined
+// ensure session is started for login checks/flash
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// APPURL/ADMINURL fallback (keep if config/header don't define them)
 if (!defined('APPURL')) {
     define("APPURL", "http://localhost/paljob");
 }
@@ -9,13 +14,12 @@ if (!defined('ADMINURL')) {
     define("ADMINURL", "http://localhost/paljob/admin-panel");
 }
 
-// Already logged in? Redirect BEFORE output
+// redirect if already logged in
 if (!empty($_SESSION['username'])) {
     header("Location: " . APPURL . "/index.php");
     exit;
 }
 
-// Handle POST BEFORE including header/HTML
 if (isset($_POST['submit'])) {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
@@ -31,10 +35,11 @@ if (isset($_POST['submit'])) {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user && password_verify($password, $user['mypassword'])) {
-        // Regenerate session ID only AFTER session_start()
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            session_regenerate_id(true);
+        // ensure session active, then regenerate id (safe before any output)
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
         }
+        session_regenerate_id(true);
 
         $_SESSION['username'] = $user['username'];
         $_SESSION['id'] = (int)$user['id'];
@@ -52,9 +57,9 @@ if (isset($_POST['submit'])) {
     }
 }
 
+// include header (prints HTML) only after session/header operations above
+require "../partials/header.php";
 
-
-// Flash UI
 $flash_error = $_SESSION['flash_error'] ?? '';
 unset($_SESSION['flash_error']);
 ?>

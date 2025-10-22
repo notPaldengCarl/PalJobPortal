@@ -1,36 +1,43 @@
 <?php
 require_once "../config/config.php";
-require_once "../partials/header.php";
 
-// Only companies can access
-if (!isset($_SESSION['type']) || $_SESSION['type'] !== "Company") {
-  header("Location: " . APPURL . "/index.php");
-  exit;
+// ✅ Always start the session first
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
 
-// Get categories
+// ✅ Only companies can access
+if (!isset($_SESSION['type']) || $_SESSION['type'] !== "Company") {
+    header("Location: " . APPURL . "/index.php");
+    exit;
+}
+
+// ✅ Get categories before rendering form
 $get_categories = $conn->query("SELECT id, name FROM categories ORDER BY name ASC");
-$get_categories->execute();
 $get_category = $get_categories->fetchAll(PDO::FETCH_OBJ);
 
-// Handle submit
+// ✅ Handle submit BEFORE including header.php
 if (isset($_POST['submit'])) {
-  $required = [
-    'job_title','job_region','job_type','vacancy','experience','salary','gender',
-    'application_deadline','job_description','responsibilities','education_experience',
-    'other_benifits','company_email','company_name','company_id','company_image','job_category'
-  ];
+    $required = [
+        'job_title','job_region','job_type','vacancy','experience','salary','gender',
+        'application_deadline','job_description','responsibilities','education_experience',
+        'other_benifits','company_email','company_name','company_id','job_category'
+    ];
 
-  $missing = [];
-  foreach ($required as $key) {
-    if (!isset($_POST[$key]) || trim((string)$_POST[$key]) === '') {
-      $missing[] = $key;
+    $missing = [];
+    foreach ($required as $key) {
+        if (!isset($_POST[$key]) || trim((string)$_POST[$key]) === '') {
+            $missing[] = $key;
+        }
     }
-  }
 
-  if (!empty($missing)) {
-    echo "<script>alert('One or more inputs are empty.');</script>";
-  } else {
+    if (!empty($missing)) {
+        $_SESSION['flash_error'] = 'One or more inputs are empty.';
+        header("Location: " . APPURL . "/jobs/post-job.php");
+        exit;
+    }
+
+    // ✅ Sanitize input
     $job_title            = trim($_POST['job_title']);
     $job_region           = trim($_POST['job_region']);
     $job_type             = trim($_POST['job_type']);
@@ -47,44 +54,110 @@ if (isset($_POST['submit'])) {
     $company_email        = trim($_POST['company_email']);
     $company_name         = trim($_POST['company_name']);
     $company_id           = (int)$_POST['company_id'];
-    $company_image        = trim($_POST['company_image']);
+    $company_image        = trim($_POST['company_image'] ?? '');
 
-    $insert = $conn->prepare("
-      INSERT INTO jobs (
-        job_title, job_region, job_type, vacancy, job_category, experience, salary, gender,
-        application_deadline, job_description, responsibilities, education_experience, other_benifits,
-        company_email, company_name, company_id, company_image, status, created_at
-      ) VALUES (
-        :job_title, :job_region, :job_type, :vacancy, :job_category, :experience, :salary, :gender,
-        :application_deadline, :job_description, :responsibilities, :education_experience, :other_benifits,
-        :company_email, :company_name, :company_id, :company_image, 1, NOW()
-      )
-    ");
+    // ✅ Handle optional job image upload
+    $uploadedImageName = null;
+    if (isset($_FILES['job_image']) && is_uploaded_file($_FILES['job_image']['tmp_name'])) {
+        $file = $_FILES['job_image'];
+        if ($file['error'] === UPLOAD_ERR_OK) {
+            $maxSize = 2 * 1024 * 1024; // 2MB
+            if ($file['size'] > $maxSize) {
+                $_SESSION['flash_error'] = 'Job image too large (max 2MB).';
+                header("Location: " . APPURL . "/jobs/post-job.php");
+                exit;
+            }
 
+            $imgInfo = @getimagesize($file['tmp_name']);
+            if ($imgInfo === false) {
+                $_SESSION['flash_error'] = 'Invalid job image file.';
+                header("Location: " . APPURL . "/jobs/post-job.php");
+                exit;
+            }
+
+            $mime = $imgInfo['mime'];
+            $allowed = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif'];
+            if (!isset($allowed[$mime])) {
+                $_SESSION['flash_error'] = 'Only JPG, PNG or GIF allowed.';
+                header("Location: " . APPURL . "/jobs/post-job.php");
+                exit;
+            }
+
+            $ext = $allowed[$mime];
+            $uploadDir = __DIR__ . '/job-images/';
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
+            $uploadedImageName = uniqid('job_', true) . '.' . $ext;
+            $destination = $uploadDir . $uploadedImageName;
+            if (!move_uploaded_file($file['tmp_name'], $destination)) {
+                $_SESSION['flash_error'] = 'Failed to save uploaded image.';
+                header("Location: " . APPURL . "/jobs/post-job.php");
+                exit;
+            }
+            @chmod($destination, 0644);
+        }
+    }
+
+    // ✅ Insert job record
+    $stmtCol = $conn->prepare("SHOW COLUMNS FROM jobs LIKE 'job_image'");
+    $stmtCol->execute();
+    $hasJobImage = (bool) $stmtCol->fetch(PDO::FETCH_ASSOC);
+
+    if ($hasJobImage) {
+        $sql = "
+            INSERT INTO jobs (
+                job_title, job_region, job_type, vacancy, job_category, experience, salary, gender,
+                application_deadline, job_description, responsibilities, education_experience, other_benifits,
+                company_email, company_name, company_id, company_image, job_image, status, created_at
+            ) VALUES (
+                :job_title, :job_region, :job_type, :vacancy, :job_category, :experience, :salary, :gender,
+                :application_deadline, :job_description, :responsibilities, :education_experience, :other_benifits,
+                :company_email, :company_name, :company_id, :company_image, :job_image, 1, NOW()
+            )
+        ";
+    } else {
+        $sql = "
+            INSERT INTO jobs (
+                job_title, job_region, job_type, vacancy, job_category, experience, salary, gender,
+                application_deadline, job_description, responsibilities, education_experience, other_benifits,
+                company_email, company_name, company_id, company_image, status, created_at
+            ) VALUES (
+                :job_title, :job_region, :job_type, :vacancy, :job_category, :experience, :salary, :gender,
+                :application_deadline, :job_description, :responsibilities, :education_experience, :other_benifits,
+                :company_email, :company_name, :company_id, :company_image, 1, NOW()
+            )
+        ";
+    }
+
+    $insert = $conn->prepare($sql);
     $insert->execute([
-      ':job_title'            => $job_title,
-      ':job_region'           => $job_region,
-      ':job_type'             => $job_type,
-      ':vacancy'              => $vacancy,
-      ':job_category'         => $job_category,
-      ':experience'           => $experience,
-      ':salary'               => $salary,
-      ':gender'               => $gender,
-      ':application_deadline' => $application_deadline,
-      ':job_description'      => $job_description,
-      ':responsibilities'     => $responsibilities,
-      ':education_experience' => $education_experience,
-      ':other_benifits'       => $other_benifits,
-      ':company_email'        => $company_email,
-      ':company_name'         => $company_name,
-      ':company_id'           => $company_id,
-      ':company_image'        => $company_image
+        ':job_title' => $job_title,
+        ':job_region' => $job_region,
+        ':job_type' => $job_type,
+        ':vacancy' => $vacancy,
+        ':job_category' => $job_category,
+        ':experience' => $experience,
+        ':salary' => $salary,
+        ':gender' => $gender,
+        ':application_deadline' => $application_deadline,
+        ':job_description' => $job_description,
+        ':responsibilities' => $responsibilities,
+        ':education_experience' => $education_experience,
+        ':other_benifits' => $other_benifits,
+        ':company_email' => $company_email,
+        ':company_name' => $company_name,
+        ':company_id' => $company_id,
+        ':company_image' => $company_image,
+        ':job_image' => $uploadedImageName
     ]);
 
+    $_SESSION['flash_success'] = 'Job posted successfully!';
     header("Location: " . APPURL . "/jobs/post-job.php");
     exit;
-  }
 }
+
+// ✅ Include header only after logic is done
+require "../partials/header.php";
 ?>
 
 <!-- HERO -->
@@ -108,6 +181,15 @@ if (isset($_POST['submit'])) {
 <section class="site-section" style="position: relative; z-index: 2; background: #fff;">
   <div class="container">
 
+    <?php if (!empty($_SESSION['flash_error'])): ?>
+      <div class="alert alert-danger"><?php echo htmlspecialchars($_SESSION['flash_error'], ENT_QUOTES, 'UTF-8'); ?></div>
+      <?php unset($_SESSION['flash_error']); ?>
+    <?php endif; ?>
+    <?php if (!empty($_SESSION['flash_success'])): ?>
+      <div class="alert alert-success"><?php echo htmlspecialchars($_SESSION['flash_success'], ENT_QUOTES, 'UTF-8'); ?></div>
+      <?php unset($_SESSION['flash_success']); ?>
+    <?php endif; ?>
+
     <div class="row align-items-center mb-5">
       <div class="col-lg-8 mb-4 mb-lg-0">
         <div class="d-flex align-items-center">
@@ -119,7 +201,7 @@ if (isset($_POST['submit'])) {
     <div class="row mb-5">
       <div class="col-lg-12">
         <form class="p-4 p-md-5 border rounded needs-validation" 
-              action="post-job.php" method="post" novalidate>
+              action="post-job.php" method="post" enctype="multipart/form-data" novalidate>
 
           <div class="form-group">
             <label for="job-title">Job Title</label>
@@ -131,16 +213,16 @@ if (isset($_POST['submit'])) {
           <div class="form-group">
             <label for="job-region">Job Region</label>
             <select name="job_region" class="form-control" id="job-region" required>
-              <option value="" disabled selected>Select Region</option>
-              <option>Anywhere</option>
-              <option>San Francisco</option>
-              <option>Palo Alto</option>
-              <option>New York</option>
-              <option>Manhattan</option>
-              <option>Ontario</option>
-              <option>Toronto</option>
-              <option>Kansas</option>
-              <option>Mountain View</option>
+                <option value="" disabled selected>Select Region</option>
+                <option>Anywhere in the Philippines</option>
+                <option>Metro Manila</option>
+                <option>Cebu</option>
+                <option>Davao</option>
+                <option>Iloilo</option>
+                <option>Cagayan de Oro</option>
+                <option>Baguio</option>
+                <option>Laguna</option>
+                <option>Pampanga</option>
             </select>
             <div class="invalid-feedback">Please choose a job region.</div>
           </div>
@@ -238,6 +320,12 @@ if (isset($_POST['submit'])) {
             <textarea name="other_benifits" id="other-benifits" cols="30" rows="7" class="form-control"
                       placeholder="Write Other Benefits..." required minlength="5" maxlength="5000"></textarea>
             <div class="invalid-feedback">Please add other benefits (min 5 characters).</div>
+          </div>
+
+          <div class="form-group">
+            <label for="job-image">Job Image (optional)</label>
+            <input type="file" name="job_image" id="job-image" accept="image/jpeg,image/png,image/gif" class="form-control-file">
+            <small class="form-text text-muted">Optional. JPG, PNG or GIF. Max 2MB.</small>
           </div>
 
           <input type="hidden" name="company_email" value="<?php echo htmlspecialchars($_SESSION['email'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
